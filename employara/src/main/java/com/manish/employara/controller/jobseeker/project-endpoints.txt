@@ -1,0 +1,34 @@
+    /**
+     * Save or update a project
+     * 
+     * @param request    The HTTP request
+     * @param screenshot Optional project screenshot (JPG, JPEG, PNG)
+     * @param project    JSON string containing:
+     *                   - title (required)
+     *                   - githubUrl
+     *                   - liveUrl
+     *                   - completionDate (required)
+     *                   - technologies (string array)
+     *                   - features (string array)
+     *                   - description
+     * @return ResponseEntity with the saved project data
+     */
+    @PostMapping("/save-project")
+    public ResponseEntity<?> saveOrUpdateProject(
+            HttpServletRequest request,
+            @RequestParam(value = "screenshot", required = false) MultipartFile screenshot,
+            @RequestParam("data") String project) {
+        return userService.saveOrUpdateProject(request, screenshot, project);
+    }
+
+    @GetMapping("/projects")
+    public ResponseEntity<?> getAllProjects(HttpServletRequest request) {
+        return userService.getAllProjects(request);
+    }
+
+    @DeleteMapping("/project/{id}")
+    public ResponseEntity<?> deleteProject(
+            @PathVariable String id,
+            HttpServletRequest request) {
+        return userService.deleteProject(id, request);
+    }
