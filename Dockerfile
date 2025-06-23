@@ -14,7 +14,7 @@ RUN mvn clean package -DskipTests -B
 FROM eclipse-temurin:21-jdk-alpine AS extractor
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
-RUN java -Djarmode=tools -jar app.jar extract --layers --launcher
+RUN java -Djarmode=layertools -jar app.jar extract
 
 # 🚀 Stage 3: Final runtime image with JRE 21
 FROM eclipse-temurin:21-jre-alpine AS runtime
