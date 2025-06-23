@@ -1,35 +1,29 @@
-# 🎯 Stage 1: Build with Maven & JDK 21
+# Stage 1 — Build
 FROM maven:3.9.8-eclipse-temurin-21 AS build
 WORKDIR /app
-
-# Cache dependencies
 COPY employara/pom.xml .
-RUN mvn dependency:go-offline -B
-
-# Build the app
 COPY employara/src ./src
 RUN mvn clean package -DskipTests -B
 
-# 🧩 Stage 2: Extract Spring Boot layers
+# Stage 2 — Extract layers
 FROM eclipse-temurin:21-jdk-alpine AS extractor
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
-RUN java -Djarmode=layertools -jar app.jar extract
 
-# 🚀 Stage 3: Final runtime image with JRE 21
+# ☑️ Use updated, non-deprecated extract command
+RUN java -Djarmode=tools extract --layers --launcher -jar app.jar
+
+# Stage 3 — Runtime image
 FROM eclipse-temurin:21-jre-alpine AS runtime
 WORKDIR /app
-
-# Create non-root user
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 USER appuser
 
-# Copy optimized layers
-COPY --from=extractor /app/dependencies/ ./dependencies/
-COPY --from=extractor /app/spring-boot-loader/ ./spring-boot-loader/
-COPY --from=extractor /app/snapshot-dependencies/ ./snapshot-dependencies/
-COPY --from=extractor /app/application/ ./application/
+# Combine all extracted layers into /app
+COPY --from=extractor /app/dependencies/ ./
+COPY --from=extractor /app/spring-boot-loader/ ./
+COPY --from=extractor /app/snapshot-dependencies/ ./
+COPY --from=extractor /app/application/ ./
 
 EXPOSE 8080
-
 ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
