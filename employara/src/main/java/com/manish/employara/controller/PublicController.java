@@ -73,4 +73,10 @@ public class PublicController {
     public ResponseEntity<?> getNotifications(HttpServletRequest request) {
         return publicService.getNotifications(request);
     }
+
+    @GetMapping("/is-api-working")
+    public ResponseEntity<?> isApiWorking() {
+        return ResponseEntity.ok("Yes, your api is working.");
+    }
+
 }
