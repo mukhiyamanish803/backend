@@ -112,7 +112,7 @@ public class JwtUtil {
                 .secure(true)
                 .path("/")
                 .maxAge(Duration.ofSeconds(expirySeconds))
-                .sameSite("strict")
+                .sameSite("None")
                 .build();
         return cookie;
     }
@@ -121,7 +121,7 @@ public class JwtUtil {
         return ResponseCookie.from(cookieName, "")
                 .httpOnly(true)
                 .secure(true)
-                .sameSite("strict")
+                .sameSite("None")
                 .path("/")
                 .maxAge(0) // instantly expire
                 .build();
