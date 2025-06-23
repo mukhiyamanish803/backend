@@ -1,0 +1,152 @@
+    @Autowired
+    private ProjectRepository projectRepository;
+
+    public ResponseEntity<?> getAllProjects(HttpServletRequest request) {
+        User user = verifyUser.verify(request);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Unauthorized User"));
+        }
+
+        try {
+            List<Project> projects = projectRepository.findByUserId(user.getId());
+            return ResponseEntity.ok(projects);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("message", "Failed to fetch projects: " + e.getMessage()));
+        }
+    }
+
+    public ResponseEntity<?> saveOrUpdateProject(
+            HttpServletRequest request,
+            MultipartFile screenshot,
+            String projectJson) {
+        User user = verifyUser.verify(request);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Unauthorized User"));
+        }
+
+        try {
+            // Parse project data from JSON string
+            ProjectDTO projectDTO = objectMapper.readValue(projectJson, ProjectDTO.class);
+
+            // Validate required fields
+            if (projectDTO.getTitle() == null || projectDTO.getTitle().trim().isEmpty() ||
+                    projectDTO.getCompletionDate() == null) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("message", "Project title and completion date are required"));
+            }
+
+            // Create or update project entity
+            Project projectEntity;
+            if (projectDTO.getId() != null && !projectDTO.getId().trim().isEmpty()) {
+                // Update existing project
+                projectEntity = projectRepository.findById(projectDTO.getId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+
+                // Verify ownership
+                if (!projectEntity.getUserId().equals(user.getId())) {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                            .body(Map.of("message", "You don't have permission to update this project"));
+                }
+            } else {
+                // Create new project
+                projectEntity = new Project();
+                projectEntity.setUserId(user.getId());
+            }
+
+            // Map DTO fields to entity
+            projectEntity.setTitle(projectDTO.getTitle());
+            projectEntity.setGithubUrl(projectDTO.getGithubUrl());
+            projectEntity.setLiveUrl(projectDTO.getLiveUrl());
+            projectEntity.setCompletionDate(projectDTO.getCompletionDate());
+            projectEntity.setTechnologies(projectDTO.getTechnologies());
+            projectEntity.setFeatures(projectDTO.getFeatures());
+            projectEntity.setDescription(projectDTO.getDescription());
+
+            // Handle screenshot upload if provided
+            if (screenshot != null && !screenshot.isEmpty()) {
+                String contentType = screenshot.getContentType();
+                if (contentType == null ||
+                        (!contentType.equals("image/jpeg") &&
+                                !contentType.equals("image/jpg") &&
+                                !contentType.equals("image/png"))) {
+                    return ResponseEntity.badRequest()
+                            .body(Map.of("message", "Invalid file type. Only JPG, JPEG, and PNG are allowed."));
+                }
+
+                try {
+                    // Delete old screenshot if exists
+                    if (projectEntity.getScreenshot() != null) {
+                        fileStorageService.deleteFromCloudinary(projectEntity.getScreenshot().getFileUrl());
+                    }
+
+                    // Upload new screenshot to Cloudinary
+                    String fileUrl = fileStorageService.uploadFile(screenshot, "project_screenshots");
+
+                    // Create Documents object with file metadata
+                    Documents screenshotDoc = Documents.builder()
+                            .fileName(screenshot.getOriginalFilename())
+                            .fileType(screenshot.getContentType())
+                            .fileUrl(fileUrl)
+                            .uploadDate(LocalDate.now())
+                            .build();
+
+                    projectEntity.setScreenshot(screenshotDoc);
+                } catch (Exception e) {
+                    return ResponseEntity.internalServerError()
+                            .body(Map.of("message", "Failed to upload screenshot: " + e.getMessage()));
+                }
+            }
+
+            // Save project
+            Project savedProject = projectRepository.save(projectEntity);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Project saved successfully",
+                    "project", savedProject));
+
+        } catch (JsonProcessingException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "Invalid project data format: " + e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("message", "Failed to save project: " + e.getMessage()));
+        }
+    }
+
+    public ResponseEntity<?> deleteProject(String id, HttpServletRequest request) {
+        User user = verifyUser.verify(request);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Unauthorized User"));
+        }
+
+        try {
+            Project project = projectRepository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+
+            // Check if the user owns this project
+            if (!project.getUserId().equals(user.getId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("message", "You don't have permission to delete this project"));
+            }
+
+            // Delete screenshot if exists
+            if (project.getScreenshot() != null) {
+                fileStorageService.deleteFromCloudinary(project.getScreenshot().getFileUrl());
+            }
+
+            projectRepository.delete(project);
+            return ResponseEntity.ok()
+                    .body(Map.of("message", "Project deleted successfully"));
+
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("message", "Failed to delete project: " + e.getMessage()));
+        }
+    }
