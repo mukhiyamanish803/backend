@@ -3,11 +3,11 @@ FROM maven:3.9.8-eclipse-temurin-21 AS build
 WORKDIR /app
 
 # Cache dependencies
-COPY pom.xml .
+COPY pom.xml ./employara
 RUN mvn dependency:go-offline -B
 
 # Build the app
-COPY src ./src
+COPY src ./employara/src
 RUN mvn clean package -DskipTests -B
 
 # 🧩 Stage 2: Extract Spring Boot layers
