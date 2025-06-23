@@ -1,22 +1,35 @@
-# Importing JDK and copying required files
-FROM openjdk:21-jdk AS build
+# 🎯 Stage 1: Build with Maven & JDK 21
+FROM maven:3.9.8-eclipse-temurin-21 AS build
 WORKDIR /app
-COPY pom.xml .
-COPY src src
 
-# Copy Maven wrapper
-COPY mvnw .
-COPY .mvn .mvn
+# Cache dependencies
+COPY employara/pom.xml .
+RUN mvn dependency:go-offline -B
 
-# Set execution permission for the Maven wrapper
-RUN chmod +x ./mvnw
-RUN ./mvnw clean package -DskipTests
+# Build the app
+COPY employara/src ./src
+RUN mvn clean package -DskipTests -B
 
-# Stage 2: Create the final Docker image using OpenJDK 19
-FROM openjdk:19-jdk
-VOLUME /tmp
-
-# Copy the JAR from the build stage
+# 🧩 Stage 2: Extract Spring Boot layers
+FROM eclipse-temurin:21-jdk-alpine AS extractor
+WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
-ENTRYPOINT ["java","-jar","/app.jar"]
+RUN java -Djarmode=tools -jar app.jar extract --layers --launcher
+
+# 🚀 Stage 3: Final runtime image with JRE 21
+FROM eclipse-temurin:21-jre-alpine AS runtime
+WORKDIR /app
+
+# Create non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
+# Copy optimized layers
+COPY --from=extractor /app/dependencies/ ./dependencies/
+COPY --from=extractor /app/spring-boot-loader/ ./spring-boot-loader/
+COPY --from=extractor /app/snapshot-dependencies/ ./snapshot-dependencies/
+COPY --from=extractor /app/application/ ./application/
+
 EXPOSE 8080
+
+ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
