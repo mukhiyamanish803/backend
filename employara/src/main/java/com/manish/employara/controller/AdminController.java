@@ -19,11 +19,6 @@ public class AdminController {
 
     private final AdminService adminService;
 
-    @GetMapping("/companies")
-    public ResponseEntity<?> getAllCompanies(HttpServletRequest request) {
-        return adminService.getAllCompanies(request);
-    }
-
     @PatchMapping("/company/{id}/{status}")
     public ResponseEntity<?> updateCompanyStatus(@PathVariable String id, @PathVariable String status, HttpServletRequest request) {
         return adminService.updateCompanyStatus(id, status, request);
