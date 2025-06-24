@@ -21,9 +21,7 @@ import lombok.RequiredArgsConstructor;
 @Component
 @RequiredArgsConstructor
 public class JwtUtil {
-
-    @Value("${jwt.issuer}")
-    private String issuer;
+    private String issuer = "https://backend-7wlz.onrender.com"
 
     @Value("${app.security.jwt.secret}")
     private String secretKey;
