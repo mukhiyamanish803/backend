@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 @RestController
-@RequestMapping("/api/user/admin/companies")
+@RequestMapping("/api/admin/companies")
 @CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 public class CompanyController {
 
