@@ -1,6 +1,5 @@
 package com.manish.employara.controller.admin;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,12 +12,12 @@ import java.util.Map;
 import java.util.HashMap;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/admin/companies")
-@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
+@RequiredArgsConstructor
 public class CompanyController {
 
     @ExceptionHandler(Exception.class)
@@ -28,14 +27,13 @@ public class CompanyController {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
-    @Autowired
     private CompanyManagementService companyManagementService;
 
     @GetMapping
     public ResponseEntity<List<Company>> getAllCompanies() {
         return ResponseEntity.ok(companyManagementService.getAllCompanies());
     }
-
+    
     @PatchMapping("/{companyId}/status")
     public ResponseEntity<Company> updateCompanyStatus(
             @PathVariable String companyId,
