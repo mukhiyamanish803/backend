@@ -17,7 +17,7 @@ import java.util.HashMap;
 import org.springframework.data.domain.Page;
 
 @RestController
-@RequestMapping("/api/user/admin")
+@RequestMapping("/api/admin")
 public class AdminDashboardController {
 
     @Autowired
