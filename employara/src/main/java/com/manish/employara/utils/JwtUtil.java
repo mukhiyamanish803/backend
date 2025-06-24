@@ -21,7 +21,6 @@ import lombok.RequiredArgsConstructor;
 @Component
 @RequiredArgsConstructor
 public class JwtUtil {
-    private String issuer = "https://backend-7wlz.onrender.com";
 
     @Value("${app.security.jwt.secret}")
     private String secretKey;
@@ -45,7 +44,6 @@ public class JwtUtil {
                 .claim("id", user.getId())
                 .issuedAt(now)
                 .expiration(expiry)
-                .issuer(issuer)
                 .signWith(getSigningKey())
                 .compact();
     }
