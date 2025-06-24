@@ -139,7 +139,9 @@ public class RecruiterService {
                             .build();
                     companyDTO.setLogo(doc);
 
-                    fileStorageService.deleteFromCloudinary(company.getLogo().getFileUrl());
+                    if (company.getLogo() != null && company.getLogo().getFileUrl() != null) {
+                        fileStorageService.deleteFromCloudinary(company.getLogo().getFileUrl());
+                    }
                 } catch (Exception e) {
                     log.error("Failed to upload logo: {}", e.getMessage(), e);
                     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
