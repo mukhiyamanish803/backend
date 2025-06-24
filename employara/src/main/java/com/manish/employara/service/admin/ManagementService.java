@@ -36,11 +36,10 @@ public class ManagementService {
     public ResponseEntity<?> addDialCode(HttpServletRequest request,
             @Valid @RequestBody DialCodeDTO dto) {
         User user = verifyUser.verify(request);
-        if (!isAdmin(user)) {
+        if (user == null || !isAdmin(user)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "Access denied. Admin role required."));
         }
-
         DialCode dialCode = DialCode.builder()
                 .countryName(dto.getCountryName())
                 .countryCode(dto.getCountryCode())
